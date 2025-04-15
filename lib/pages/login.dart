@@ -68,7 +68,7 @@ class Login extends StatelessWidget {
                             // Register action
                           },
                           child: Text(
-                            "REGISTER",
+                            "LOGIN",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
