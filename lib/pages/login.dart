@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:food_recipe_app/pages/login.dart';
+import 'package:food_recipe_app/pages/register.dart';
 
-class Register extends StatelessWidget {
+class Login extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -27,12 +27,12 @@ class Register extends StatelessWidget {
                     Navigator.pop(context);
                   },
                 ),
-                SizedBox(height: 50),
+                SizedBox(height: 100),
 
                 // Register Title
                 Center(
                   child: Text(
-                    "Register",
+                    "Login",
                     style: TextStyle(
                       fontFamily: 'Comfortaa',
                       fontSize: 48,
@@ -48,14 +48,10 @@ class Register extends StatelessWidget {
                   key: _formKey,
                   child: Column(
                     children: [
-                      buildTextField("Name"),
-                      SizedBox(height: 12),
                       buildTextField("Email"),
                       SizedBox(height: 12),
                       buildTextField("Password", isPassword: true),
                       SizedBox(height: 12),
-                      buildTextField("Confirm Password", isPassword: true),
-                      SizedBox(height: 34),
 
                       // Register Button
                       SizedBox(
@@ -87,18 +83,18 @@ class Register extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text("Already have an account? "),
+                          Text("Don't have an account? "),
                           GestureDetector(
                             onTap: () {
-                              Navigator.pushReplacement(
+                              Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => Login(),
+                                  builder: (context) => Register(),
                                 ),
                               );
                             },
                             child: Text(
-                              "Sign In",
+                              "Sign Up",
                               style: TextStyle(
                                 color: Color(0xFFFF6B2C),
                                 fontWeight: FontWeight.bold,

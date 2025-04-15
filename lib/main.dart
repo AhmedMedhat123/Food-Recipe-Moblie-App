@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:food_recipe_app/firebase_options.dart';
+import 'package:food_recipe_app/pages/login.dart';
 import 'firebase_options.dart';
 import 'package:food_recipe_app/pages/register.dart';
 
@@ -16,6 +16,6 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Register(), debugShowCheckedModeBanner: false);
+    return MaterialApp(home: Login(), debugShowCheckedModeBanner: false);
   }
 }
