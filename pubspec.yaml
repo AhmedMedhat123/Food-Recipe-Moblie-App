@@ -97,3 +97,5 @@ flutter:
 
   assets:
     - assets/images/steak.jpg
+    - assets/images/beef.jpeg
+    - assets/images/vegetables.jpg
