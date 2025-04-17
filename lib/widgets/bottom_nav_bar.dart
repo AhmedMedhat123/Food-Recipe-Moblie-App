@@ -23,7 +23,7 @@ class BottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(Icons.search, size: 30), label: ''),
         BottomNavigationBarItem(icon: Icon(Icons.add_box, size: 30), label: ''),
         BottomNavigationBarItem(
-          icon: Icon(Icons.favorite_border, size: 30),
+          icon: Icon(Icons.favorite, size: 30),
           label: '',
         ),
       ],

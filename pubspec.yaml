@@ -94,3 +94,6 @@ flutter:
     - family: Comfortaa
       fonts:
         - asset: assets/fonts/Comfortaa-VariableFont_wght.ttf
+
+  assets:
+    - assets/images/steak.jpg
