@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:food_recipe_app/model/recipe_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:food_recipe_app/widgets/bottom_nav_bar.dart';
+import 'package:food_recipe_app/pages/recipe_detail_page.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -162,88 +163,108 @@ class _HomeState extends State<Home> {
                     ),
                     itemBuilder: (context, index) {
                       final recipe = filteredRecipes[index];
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Image + Favorite Icon
-                            Stack(
-                              children: [
-                                Container(
-                                  height: 140,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(16),
+                      return GestureDetector(
+                        onTap: () {
+                          // Navigate to the Recipe Detail page and pass the selected recipe
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => RecipeDetailPage(recipe: recipe),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Image + Favorite Icon
+                              Stack(
+                                children: [
+                                  Container(
+                                    height: 140,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(16),
+                                      ),
                                     ),
+                                    child:
+                                        recipe.image.isEmpty
+                                            ? Icon(Icons.image, size: 50)
+                                            : ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.vertical(
+                                                    top: Radius.circular(16),
+                                                  ),
+                                              child: Image.network(
+                                                recipe.image,
+                                                fit: BoxFit.cover,
+                                                height: 140,
+                                                width: double.infinity,
+                                              ),
+                                            ),
                                   ),
-                                  child:
-                                      recipe.image.isEmpty
-                                          ? Icon(Icons.image, size: 50)
-                                          : ClipRRect(
-                                            borderRadius: BorderRadius.vertical(
-                                              top: Radius.circular(16),
-                                            ),
-                                            child: Image.network(
-                                              recipe.image,
-                                              fit: BoxFit.cover,
-                                              height: 140,
-                                              width: double.infinity,
-                                            ),
-                                          ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      // Handle favorite toggle
-                                    },
-                                    child: CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: Colors.white,
-                                      child: Icon(
-                                        Icons.favorite_border,
-                                        color: Colors.grey,
-                                        size: 16,
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // Handle favorite toggle
+                                      },
+                                      child: CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: Colors.white,
+                                        child: Icon(
+                                          Icons.favorite_border,
+                                          color: Colors.grey,
+                                          size: 16,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    recipe.name,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.access_time, size: 14),
-                                      SizedBox(width: 4),
-                                      Text('${recipe.totalTime} min'),
-                                    ],
-                                  ),
                                 ],
                               ),
-                            ),
-                          ],
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      recipe.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.local_fire_department,
+                                          size: 14,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text('${recipe.calories} Cal'),
+                                        SizedBox(width: 10),
+                                        Icon(Icons.access_time, size: 14),
+                                        SizedBox(width: 4),
+                                        Text('${recipe.totalTime} min'),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:food_recipe_app/widgets/bottom_nav_bar.dart';
+import 'package:food_recipe_app/model/recipe_model.dart';
 
 class RecipeDetailPage extends StatefulWidget {
+  final Recipe recipe;
+  RecipeDetailPage({required this.recipe});
+
   @override
   _RecipeDetailPageState createState() => _RecipeDetailPageState();
 }
@@ -20,8 +24,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             left: 0,
             right: 0,
             child: ClipRRect(
-              child: Image.asset(
-                'assets/images/steak.jpg',
+              child: Image.network(
+                widget.recipe.image,
                 width: double.infinity,
                 height: 380,
                 fit: BoxFit.cover,
@@ -60,13 +64,18 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Beef Steak",
-                        style: TextStyle(
-                          fontFamily: 'comfortaa',
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF6A2E1F),
+                      Expanded(
+                        child: Text(
+                          widget.recipe.name,
+                          style: TextStyle(
+                            fontFamily: 'comfortaa',
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF6A2E1F),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          softWrap: false,
                         ),
                       ),
                       Container(
@@ -85,39 +94,46 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 4),
 
                   // Cal & Time
                   Row(
-                    children: const [
+                    children: [
                       Icon(
                         Icons.local_fire_department,
                         size: 18,
                         color: Colors.grey,
                       ),
                       SizedBox(width: 4),
-                      Text("140 Cal", style: TextStyle(color: Colors.grey)),
+                      Text(
+                        "${widget.recipe.calories} Cal/serve",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                       SizedBox(width: 16),
                       Icon(Icons.access_time, size: 18, color: Colors.grey),
                       SizedBox(width: 4),
-                      Text("25 min", style: TextStyle(color: Colors.grey)),
+                      Text(
+                        "${widget.recipe.totalTime} min",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
 
                   // Rating
                   Row(
-                    children: const [
-                      Icon(Icons.star, color: Colors.amber, size: 18),
-                      SizedBox(width: 4),
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 18),
+                      const SizedBox(width: 4),
                       Text(
-                        "4.5/5",
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                        "${widget.recipe.rating.toStringAsFixed(1)}/5",
+                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
-                      SizedBox(width: 6),
+                      const SizedBox(width: 6),
                       Text(
-                        "(20 Reviews)",
-                        style: TextStyle(color: Colors.grey),
+                        "(${widget.recipe.reviewCount} Reviews)",
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
@@ -127,72 +143,37 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                   const Text(
                     "Ingredients",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF6A2E1F),
                     ),
                   ),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "How many servings?",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  if (servings > 1) servings--;
-                                });
-                              },
-                              icon: const Icon(Icons.remove),
-                            ),
-                            Text(
-                              servings.toString(),
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  servings++;
-                                });
-                              },
-                              icon: const Icon(Icons.add),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+
+                  // Ingredient List
+                  for (int i = 0; i < widget.recipe.ingredients.length; i++)
+                    buildlistItem(i, widget.recipe.ingredients[i]),
+
+                  const SizedBox(height: 16),
+
+                  // Instructions Title
+                  const Text(
+                    "Instructions",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF6A2E1F),
+                    ),
                   ),
 
                   const SizedBox(height: 16),
 
-                  // Ingredient List
-                  buildIngredientItem("assets/images/beef.jpeg", "Beef", 800.0),
-                  buildIngredientItem(
-                    "assets/images/vegetables.jpg",
-                    "Vegetables",
-                    200.0,
-                  ),
-                  buildIngredientItem("assets/images/beef.jpeg", "Beef", 800.0),
-                  buildIngredientItem(
-                    "assets/images/vegetables.jpg",
-                    "Vegetables",
-                    200.0,
-                  ),
-                  buildIngredientItem("assets/images/beef.jpeg", "Beef", 800.0),
-                  buildIngredientItem("assets/images/beef.jpeg", "Beef", 800.0),
-                  buildIngredientItem("assets/images/beef.jpeg", "Beef", 800.0),
-                  buildIngredientItem("assets/images/beef.jpeg", "Beef", 800.0),
-                  buildIngredientItem("assets/images/beef.jpeg", "Beef", 800.0),
+                  // Instructions List
+                  for (int i = 0; i < widget.recipe.instructions.length; i++)
+                    buildlistItem(i, widget.recipe.instructions[i]),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -203,17 +184,23 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     );
   }
 
-  Widget buildIngredientItem(String icon, String name, double amount) {
+  Widget buildlistItem(int index, String ingredient) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 10.0, left: 10.0, right: 10.0),
       child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start, // Align text to top if wrapped
         children: [
-          Image.asset(icon, width: 40, height: 40),
-          const SizedBox(width: 12),
-          Expanded(child: Text(name, style: const TextStyle(fontSize: 16))),
           Text(
-            "${(amount * servings / 2).toStringAsFixed(1)}gm",
-            style: const TextStyle(fontWeight: FontWeight.w500),
+            '${index + 1}. ',
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
+          Expanded(
+            child: Text(
+              ingredient,
+              style: TextStyle(fontSize: 16, color: Colors.black),
+              softWrap: true,
+            ),
           ),
         ],
       ),
