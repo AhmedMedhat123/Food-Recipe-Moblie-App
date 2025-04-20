@@ -1,8 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:food_recipe_app/services/auth.dart';
 import 'package:food_recipe_app/pages/register.dart';
+import 'package:food_recipe_app/pages/home.dart';
 
-class Login extends StatelessWidget {
+class Login extends StatefulWidget {
+  @override
+  _LoginState createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+
+  // Controllers for text fields
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // Error messages for each field
+  String? _emailError;
+  String? _passwordError;
+
+  Future<void> _login() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+
+    // Clear previous error messages
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
+
+    // Validate form and log in
+    if (_validateForm(email, password)) {
+      String? result = await _authService.loginWithEmailPassword(
+        email,
+        password,
+      );
+
+      if (result == null) {
+        // Login successful, navigate to home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Home()),
+        );
+      } else {
+        // Handle error
+        setState(() {
+          _emailError = result;
+        });
+      }
+    }
+  }
+
+  bool _validateForm(String email, String password) {
+    bool isValid = true;
+
+    if (email.isEmpty ||
+        !RegExp(
+          r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$",
+        ).hasMatch(email)) {
+      setState(() {
+        _emailError = 'Please enter a valid email address';
+      });
+      isValid = false;
+    }
+
+    if (password.isEmpty || password.length < 6) {
+      setState(() {
+        _passwordError = 'Password must be at least 6 characters long';
+      });
+      isValid = false;
+    }
+
+    return isValid;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,20 +87,9 @@ class Login extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back Arrow
-                IconButton(
-                  icon: Icon(
-                    Icons.arrow_back,
-                    color: Color(0xFF81230A),
-                    size: 30,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                SizedBox(height: 100),
+                SizedBox(height: 150),
 
-                // Register Title
+                // Login Title
                 Center(
                   child: Text(
                     "Login",
@@ -48,12 +108,21 @@ class Login extends StatelessWidget {
                   key: _formKey,
                   child: Column(
                     children: [
-                      buildTextField("Email"),
+                      buildTextField(
+                        "Email",
+                        controller: _emailController,
+                        errorText: _emailError,
+                      ),
                       SizedBox(height: 12),
-                      buildTextField("Password", isPassword: true),
+                      buildTextField(
+                        "Password",
+                        controller: _passwordController,
+                        isPassword: true,
+                        errorText: _passwordError,
+                      ),
                       SizedBox(height: 12),
 
-                      // Register Button
+                      // Login Button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -64,9 +133,7 @@ class Login extends StatelessWidget {
                               borderRadius: BorderRadius.circular(30),
                             ),
                           ),
-                          onPressed: () {
-                            // Register action
-                          },
+                          onPressed: _login,
                           child: Text(
                             "LOGIN",
                             style: TextStyle(
@@ -79,7 +146,7 @@ class Login extends StatelessWidget {
                       ),
                       SizedBox(height: 30),
 
-                      // Sign In Text
+                      // Sign Up Text
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -114,19 +181,38 @@ class Login extends StatelessWidget {
     );
   }
 
-  Widget buildTextField(String hint, {bool isPassword = false}) {
-    return TextFormField(
-      obscureText: isPassword,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+  Widget buildTextField(
+    String hint, {
+    bool isPassword = false,
+    TextEditingController? controller,
+    String? errorText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword,
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide.none,
+            ),
+          ),
         ),
-      ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text(
+              errorText,
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -84,6 +84,7 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         backgroundColor: Color(0xFFFFF8F1),
         elevation: 0,
+        automaticallyImplyLeading: false,
         title: Text(
           'Food Recipes',
           style: TextStyle(

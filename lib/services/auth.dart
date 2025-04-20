@@ -1,5 +1,3 @@
-// lib/services/auth.dart
-
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
@@ -38,6 +36,27 @@ class AuthService {
         return 'The email address is invalid. Please enter a valid email.';
       } else {
         return e.message; // Return any other FirebaseAuthException message
+      }
+    } catch (e) {
+      return 'An error occurred. Please try again later.';
+    }
+  }
+
+  Future<String?> loginWithEmailPassword(String email, String password) async {
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      return null; // Login successful
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        return 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        return 'Incorrect password.';
+      } else {
+        return e.message;
       }
     } catch (e) {
       return 'An error occurred. Please try again later.';
