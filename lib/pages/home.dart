@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:food_recipe_app/model/recipe_model.dart';
+import 'package:http/http.dart' as http;
 import 'package:food_recipe_app/widgets/bottom_nav_bar.dart';
 
 class Home extends StatefulWidget {
@@ -10,21 +13,60 @@ class _HomeState extends State<Home> {
   final List<String> categories = ['All', 'Dinner', 'Lunch', 'Breakfast'];
   String selectedCategory = 'All';
 
-  List<Map<String, dynamic>> recipes = [
-    {'title': 'Mexican Pizza', 'calories': 140, 'time': 25, 'favorite': true},
-    {'title': 'Chicken Burger', 'calories': 140, 'time': 25, 'favorite': false},
-    {'title': 'Mexican Pizza', 'calories': 140, 'time': 25, 'favorite': false},
-    {'title': 'Mexican Pizza', 'calories': 140, 'time': 25, 'favorite': false},
-    {'title': 'Mexican Pizza', 'calories': 140, 'time': 25, 'favorite': false},
-    {'title': 'Mexican Pizza', 'calories': 140, 'time': 25, 'favorite': false},
-  ];
+  List<Recipe> recipes = [];
+  List<Recipe> filteredRecipes = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchRecipes();
+  }
+
+  Future<void> fetchRecipes() async {
+    final url = Uri.parse('https://dummyjson.com/recipes');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<Recipe> loadedRecipes =
+            (data['recipes'] as List)
+                .map((json) => Recipe.fromJson(json))
+                .toList();
+        setState(() {
+          recipes = loadedRecipes;
+          filteredRecipes = loadedRecipes; // Initialize with all recipes
+          isLoading = false;
+        });
+      } else {
+        print('Failed to load recipes');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
+  // Filter recipes based on selected category
+  void filterRecipes(String category) {
+    setState(() {
+      selectedCategory = category;
+      if (category == 'All') {
+        filteredRecipes = recipes; // Show all recipes
+      } else {
+        filteredRecipes =
+            recipes
+                .where((recipe) => recipe.mealType.contains(category))
+                .toList();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFDF6EF),
+      backgroundColor: Color(0xFFFFF8F1),
       appBar: AppBar(
-        backgroundColor: Color(0xFFFDF6EF),
+        backgroundColor: Color(0xFFFFF8F1),
         elevation: 0,
         title: Text(
           'Food Recipes',
@@ -76,9 +118,9 @@ class _HomeState extends State<Home> {
                           selected: isSelected,
                           showCheckmark: false,
                           onSelected: (_) {
-                            setState(() {
-                              selectedCategory = category;
-                            });
+                            filterRecipes(
+                              category,
+                            ); // Filter recipes on selection
                           },
                           selectedColor: Color(0xFFFF6B2C),
                           backgroundColor: Colors.white,
@@ -92,108 +134,113 @@ class _HomeState extends State<Home> {
             ),
             SizedBox(height: 16),
             // Recipe Grid
-            Expanded(
-              child: GridView.builder(
-                itemCount: recipes.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 3 / 3.5,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemBuilder: (context, index) {
-                  final recipe = recipes[index];
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+            isLoading
+                ? Center(child: CircularProgressIndicator())
+                : Expanded(
+                  child: GridView.builder(
+                    itemCount: filteredRecipes.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 3 / 3.5,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Image placeholder + Favorite icon
-                        Stack(
+                    itemBuilder: (context, index) {
+                      final recipe = filteredRecipes[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Container(
-                              height: 140,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(16),
+                            // Image placeholder + Favorite icon
+                            Stack(
+                              children: [
+                                Container(
+                                  height: 140,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(16),
+                                    ),
+                                  ),
+                                  child:
+                                      recipe.image.isEmpty
+                                          ? Icon(Icons.image, size: 50)
+                                          : ClipRRect(
+                                            borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(16),
+                                            ),
+                                            child: Image.network(
+                                              recipe.image,
+                                              fit: BoxFit.cover,
+                                              height: 140,
+                                              width: double.infinity,
+                                            ),
+                                          ),
                                 ),
-                              ),
-                              child: Icon(Icons.image, size: 50),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    recipe['favorite'] = !recipe['favorite'];
-                                  });
-                                },
-                                child: CircleAvatar(
-                                  radius: 14,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(
-                                    recipe['favorite']
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color:
-                                        recipe['favorite']
-                                            ? Colors.red
-                                            : Colors.grey,
-                                    size: 16,
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        // Handle favorite logic here
+                                      });
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: Colors.white,
+                                      child: Icon(
+                                        Icons.favorite_border,
+                                        color: Colors.grey,
+                                        size: 16,
+                                      ),
+                                    ),
                                   ),
                                 ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Title Text
+                                  Text(
+                                    recipe.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 8),
+                                  // Row with icons and text
+                                  Row(
+                                    children: [
+                                      Icon(Icons.access_time, size: 14),
+                                      SizedBox(width: 4),
+                                      Text('${recipe.totalTime} min'),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Title Text
-                              Text(
-                                recipe['title'],
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 8,
-                              ), // Optional spacing between title and next section
-                              // Row with icons and text
-                              Row(
-                                children: [
-                                  Icon(Icons.local_fire_department, size: 14),
-                                  SizedBox(width: 4),
-                                  Text('${recipe['calories']} Cal'),
-                                  SizedBox(width: 10),
-                                  Icon(Icons.access_time, size: 14),
-                                  SizedBox(width: 4),
-                                  Text('${recipe['time']} min'),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
+                      );
+                    },
+                  ),
+                ),
           ],
         ),
       ),
-      // Bottom Navigation Bar
       bottomNavigationBar: BottomNavBar(currentIndex: 0, onTap: (index) {}),
     );
   }
