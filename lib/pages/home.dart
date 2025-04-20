@@ -13,6 +13,9 @@ class _HomeState extends State<Home> {
   final List<String> categories = ['All', 'Dinner', 'Lunch', 'Breakfast'];
   String selectedCategory = 'All';
 
+  final TextEditingController _searchController = TextEditingController();
+  String searchQuery = '';
+
   List<Recipe> recipes = [];
   List<Recipe> filteredRecipes = [];
   bool isLoading = true;
@@ -21,6 +24,16 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     fetchRecipes();
+
+    _searchController.addListener(() {
+      filterRecipes(selectedCategory);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchRecipes() async {
@@ -35,7 +48,7 @@ class _HomeState extends State<Home> {
                 .toList();
         setState(() {
           recipes = loadedRecipes;
-          filteredRecipes = loadedRecipes; // Initialize with all recipes
+          filteredRecipes = loadedRecipes;
           isLoading = false;
         });
       } else {
@@ -46,18 +59,20 @@ class _HomeState extends State<Home> {
     }
   }
 
-  // Filter recipes based on selected category
   void filterRecipes(String category) {
     setState(() {
       selectedCategory = category;
-      if (category == 'All') {
-        filteredRecipes = recipes; // Show all recipes
-      } else {
-        filteredRecipes =
-            recipes
-                .where((recipe) => recipe.mealType.contains(category))
-                .toList();
-      }
+      searchQuery = _searchController.text.toLowerCase();
+
+      filteredRecipes =
+          recipes.where((recipe) {
+            final matchesCategory =
+                category == 'All' || recipe.mealType.contains(category);
+            final matchesSearch = recipe.name.toLowerCase().contains(
+              searchQuery,
+            );
+            return matchesCategory && matchesSearch;
+          }).toList();
     });
   }
 
@@ -86,6 +101,7 @@ class _HomeState extends State<Home> {
           children: [
             // Search Bar
             TextField(
+              controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search for any recipes',
                 prefixIcon: Icon(Icons.search),
@@ -104,6 +120,7 @@ class _HomeState extends State<Home> {
               // scrollDirection: Axis.horizontal,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
+
                 children:
                     categories.map((category) {
                       final isSelected = selectedCategory == category;
@@ -118,9 +135,7 @@ class _HomeState extends State<Home> {
                           selected: isSelected,
                           showCheckmark: false,
                           onSelected: (_) {
-                            filterRecipes(
-                              category,
-                            ); // Filter recipes on selection
+                            filterRecipes(category);
                           },
                           selectedColor: Color(0xFFFF6B2C),
                           backgroundColor: Colors.white,
@@ -135,7 +150,7 @@ class _HomeState extends State<Home> {
             SizedBox(height: 16),
             // Recipe Grid
             isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? Expanded(child: Center(child: CircularProgressIndicator()))
                 : Expanded(
                   child: GridView.builder(
                     itemCount: filteredRecipes.length,
@@ -156,7 +171,7 @@ class _HomeState extends State<Home> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Image placeholder + Favorite icon
+                            // Image + Favorite Icon
                             Stack(
                               children: [
                                 Container(
@@ -188,9 +203,7 @@ class _HomeState extends State<Home> {
                                   right: 8,
                                   child: GestureDetector(
                                     onTap: () {
-                                      setState(() {
-                                        // Handle favorite logic here
-                                      });
+                                      // Handle favorite toggle
                                     },
                                     child: CircleAvatar(
                                       radius: 14,
@@ -210,7 +223,6 @@ class _HomeState extends State<Home> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Title Text
                                   Text(
                                     recipe.name,
                                     style: TextStyle(
@@ -221,7 +233,6 @@ class _HomeState extends State<Home> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   SizedBox(height: 8),
-                                  // Row with icons and text
                                   Row(
                                     children: [
                                       Icon(Icons.access_time, size: 14),
