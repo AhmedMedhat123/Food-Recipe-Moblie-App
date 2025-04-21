@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_recipe_app/pages/home.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -15,7 +16,21 @@ class BottomNavBar extends StatelessWidget {
     return BottomNavigationBar(
       backgroundColor: Colors.white,
       currentIndex: currentIndex,
-      onTap: onTap,
+      onTap: (index) {
+        if (index == 0) {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else if (index == 1) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => Home(focusSearch: true)),
+          );
+        } else if (index == 3) {
+          Navigator.pushReplacementNamed(context, '/favorites');
+        } else {
+          onTap(index);
+        }
+      },
+
       type: BottomNavigationBarType.fixed,
       selectedItemColor: Colors.black,
       unselectedItemColor: Colors.grey,

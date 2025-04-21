@@ -7,6 +7,9 @@ import 'package:food_recipe_app/pages/recipe_detail_page.dart';
 
 class Home extends StatefulWidget {
   @override
+  final bool focusSearch;
+  const Home({this.focusSearch = false});
+
   _HomeState createState() => _HomeState();
 }
 
@@ -14,6 +17,7 @@ class _HomeState extends State<Home> {
   final List<String> categories = ['All', 'Dinner', 'Lunch', 'Breakfast'];
   String selectedCategory = 'All';
 
+  final FocusNode _searchFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
   String searchQuery = '';
 
@@ -29,10 +33,17 @@ class _HomeState extends State<Home> {
     _searchController.addListener(() {
       filterRecipes(selectedCategory);
     });
+
+    if (widget.focusSearch) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FocusScope.of(context).requestFocus(_searchFocusNode);
+      });
+    }
   }
 
   @override
   void dispose() {
+    _searchFocusNode.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -103,6 +114,7 @@ class _HomeState extends State<Home> {
           children: [
             // Search Bar
             TextField(
+              focusNode: _searchFocusNode,
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search for any recipes',
@@ -274,7 +286,10 @@ class _HomeState extends State<Home> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavBar(currentIndex: 0, onTap: (index) {}),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: widget.focusSearch ? 1 : 0,
+        onTap: (index) {},
+      ),
     );
   }
 }
