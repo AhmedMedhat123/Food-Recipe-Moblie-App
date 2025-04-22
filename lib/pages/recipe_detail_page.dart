@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_recipe_app/services/favorite_service.dart';
 import 'package:food_recipe_app/widgets/bottom_nav_bar.dart';
 import 'package:food_recipe_app/model/recipe_model.dart';
 
@@ -12,6 +13,30 @@ class RecipeDetailPage extends StatefulWidget {
 
 class _RecipeDetailPageState extends State<RecipeDetailPage> {
   int servings = 1;
+  bool isFavorite = false;
+  final FavoriteService _favoriteService = FavoriteService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavoriteStatus();
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    final favorite = await _favoriteService.isFavorite(
+      widget.recipe.id.toString(),
+    );
+    setState(() {
+      isFavorite = favorite;
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    await _favoriteService.toggleFavorite(widget.recipe);
+    setState(() {
+      isFavorite = !isFavorite;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,12 +109,11 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                           border: Border.all(color: Colors.grey, width: 1.5),
                         ),
                         child: IconButton(
-                          icon: const Icon(
-                            Icons.favorite_border,
-                            color: Colors.black,
-                            size: 30,
+                          icon: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: isFavorite ? Colors.red : Colors.grey,
                           ),
-                          onPressed: () {},
+                          onPressed: _toggleFavorite,
                         ),
                       ),
                     ],

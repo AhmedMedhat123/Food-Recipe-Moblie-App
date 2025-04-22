@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_recipe_app/model/recipe_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:food_recipe_app/widgets/bottom_nav_bar.dart';
 import 'package:food_recipe_app/pages/recipe_detail_page.dart';
+import 'package:food_recipe_app/services/favorite_service.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -17,6 +20,8 @@ class _HomeState extends State<Home> {
   final List<String> categories = ['All', 'Dinner', 'Lunch', 'Breakfast'];
   String selectedCategory = 'All';
 
+  Set<String> favoriteIds = {};
+
   final FocusNode _searchFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
   String searchQuery = '';
@@ -29,6 +34,7 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     fetchRecipes();
+    fetchFavorites();
 
     _searchController.addListener(() {
       filterRecipes(selectedCategory);
@@ -69,6 +75,20 @@ class _HomeState extends State<Home> {
     } catch (e) {
       print('Error: $e');
     }
+  }
+
+  Future<void> fetchFavorites() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final snapshot =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('favorites')
+            .get();
+
+    setState(() {
+      favoriteIds = snapshot.docs.map((doc) => doc.id).toSet();
+    });
   }
 
   void filterRecipes(String category) {
@@ -228,15 +248,28 @@ class _HomeState extends State<Home> {
                                     top: 8,
                                     right: 8,
                                     child: GestureDetector(
-                                      onTap: () {
-                                        // Handle favorite toggle
+                                      onTap: () async {
+                                        await FavoriteService().toggleFavorite(
+                                          recipe,
+                                        );
+                                        await fetchFavorites(); // refresh UI with updated favorites
                                       },
+
                                       child: CircleAvatar(
                                         radius: 14,
                                         backgroundColor: Colors.white,
                                         child: Icon(
-                                          Icons.favorite_border,
-                                          color: Colors.grey,
+                                          favoriteIds.contains(
+                                                recipe.id.toString(),
+                                              )
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color:
+                                              favoriteIds.contains(
+                                                    recipe.id.toString(),
+                                                  )
+                                                  ? Colors.red
+                                                  : Colors.grey,
                                           size: 16,
                                         ),
                                       ),
