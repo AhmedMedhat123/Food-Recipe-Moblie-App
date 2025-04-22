@@ -24,6 +24,8 @@ class BottomNavBar extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (_) => Home(focusSearch: true)),
           );
+        } else if (index == 2) {
+          Navigator.pushReplacementNamed(context, '/add_recipe');
         } else if (index == 3) {
           Navigator.pushReplacementNamed(context, '/favorites');
         } else {

@@ -6,6 +6,7 @@ import 'package:food_recipe_app/pages/login.dart';
 import 'package:food_recipe_app/pages/recipe_detail_page.dart';
 import 'firebase_options.dart';
 import 'package:food_recipe_app/pages/register.dart';
+import 'package:food_recipe_app/pages/add_recipe.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => Home(),
         '/favorites': (context) => FavoritePage(),
         '/register': (context) => Register(),
+        '/add_recipe': (context) => AddRecipe(),
       },
       debugShowCheckedModeBanner: false,
     );
