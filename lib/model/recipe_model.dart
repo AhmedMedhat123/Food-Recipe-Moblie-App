@@ -10,6 +10,8 @@ class Recipe {
   final List<String> mealType;
   final int calories;
   final List<String> instructions;
+  final bool isFromFirestore;
+  final String? firestoreId;
 
   Recipe({
     required this.id,
@@ -23,6 +25,8 @@ class Recipe {
     required this.mealType,
     required this.calories,
     required this.instructions,
+    this.isFromFirestore = false,
+    this.firestoreId,
   });
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
@@ -42,4 +46,7 @@ class Recipe {
   }
 
   int get totalTime => prepTimeMinutes + cookTimeMinutes;
+
+  // Unique ID that works for both API and Firestore recipes
+  String get uniqueId => isFromFirestore ? firestoreId! : id.toString();
 }

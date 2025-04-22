@@ -33,7 +33,7 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    fetchRecipes();
+    fetchCombinedRecipes();
     fetchFavorites();
 
     _searchController.addListener(() {
@@ -54,41 +54,99 @@ class _HomeState extends State<Home> {
     super.dispose();
   }
 
-  Future<void> fetchRecipes() async {
-    final url = Uri.parse('https://dummyjson.com/recipes');
+  Future<void> fetchCombinedRecipes() async {
+    setState(() {
+      isLoading = true;
+    });
+
     try {
+      // Fetch both API and Firestore recipes in parallel
+      final results = await Future.wait([
+        fetchApiRecipes(),
+        fetchFirestoreRecipes(),
+      ]);
+
+      // Combine both lists
+      setState(() {
+        recipes = [...results[0], ...results[1]];
+        filteredRecipes = recipes;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching recipes: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<List<Recipe>> fetchApiRecipes() async {
+    try {
+      final url = Uri.parse('https://dummyjson.com/recipes');
       final response = await http.get(url);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<Recipe> loadedRecipes =
-            (data['recipes'] as List)
-                .map((json) => Recipe.fromJson(json))
-                .toList();
-        setState(() {
-          recipes = loadedRecipes;
-          filteredRecipes = loadedRecipes;
-          isLoading = false;
-        });
+        return (data['recipes'] as List)
+            .map((json) => Recipe.fromJson(json))
+            .toList();
       } else {
-        print('Failed to load recipes');
+        throw Exception('Failed to load API recipes');
       }
     } catch (e) {
-      print('Error: $e');
+      print('API Error: $e');
+      return []; // Return empty list if API fails
+    }
+  }
+
+  Future<List<Recipe>> fetchFirestoreRecipes() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('recipes').get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Recipe(
+          id: data['id'] ?? 0,
+          name: data['name'] ?? 'No name',
+          image: data['image'] ?? '',
+          prepTimeMinutes: data['prepTimeMinutes'] ?? 0,
+          cookTimeMinutes: data['cookTimeMinutes'] ?? 0,
+          reviewCount: data['reviewCount'] ?? 0,
+          rating: (data['rating'] ?? 0).toDouble(),
+          ingredients: List<String>.from(data['ingredients'] ?? []),
+          mealType: List<String>.from(data['mealType'] ?? []),
+          calories: data['caloriesPerServing'] ?? 0,
+          instructions: List<String>.from(data['instructions'] ?? []),
+          // Additional fields from Firestore if needed
+          isFromFirestore: true,
+          firestoreId: doc.id,
+        );
+      }).toList();
+    } catch (e) {
+      print('Firestore Error: $e');
+      return []; // Return empty list if Firestore fails
     }
   }
 
   Future<void> fetchFavorites() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    final snapshot =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .collection('favorites')
-            .get();
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
 
-    setState(() {
-      favoriteIds = snapshot.docs.map((doc) => doc.id).toSet();
-    });
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('favorites')
+              .get();
+
+      setState(() {
+        favoriteIds = snapshot.docs.map((doc) => doc.id).toSet();
+      });
+    } catch (e) {
+      print('Error fetching favorites: $e');
+    }
   }
 
   void filterRecipes(String category) {
@@ -99,7 +157,10 @@ class _HomeState extends State<Home> {
       filteredRecipes =
           recipes.where((recipe) {
             final matchesCategory =
-                category == 'All' || recipe.mealType.contains(category);
+                category == 'All' ||
+                recipe.mealType.any(
+                  (type) => type.toLowerCase().contains(category.toLowerCase()),
+                );
             final matchesSearch = recipe.name.toLowerCase().contains(
               searchQuery,
             );
@@ -151,10 +212,8 @@ class _HomeState extends State<Home> {
             SizedBox(height: 16),
             // Category Chips
             SingleChildScrollView(
-              // scrollDirection: Axis.horizontal,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-
                 children:
                     categories.map((category) {
                       final isSelected = selectedCategory == category;
@@ -168,9 +227,7 @@ class _HomeState extends State<Home> {
                           label: Text(category),
                           selected: isSelected,
                           showCheckmark: false,
-                          onSelected: (_) {
-                            filterRecipes(category);
-                          },
+                          onSelected: (_) => filterRecipes(category),
                           selectedColor: Color(0xFFFF6B2C),
                           backgroundColor: Colors.white,
                           labelStyle: TextStyle(
@@ -185,6 +242,15 @@ class _HomeState extends State<Home> {
             // Recipe Grid
             isLoading
                 ? Expanded(child: Center(child: CircularProgressIndicator()))
+                : filteredRecipes.isEmpty
+                ? Expanded(
+                  child: Center(
+                    child: Text(
+                      'No recipes found',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                )
                 : Expanded(
                   child: GridView.builder(
                     itemCount: filteredRecipes.length,
@@ -196,123 +262,7 @@ class _HomeState extends State<Home> {
                     ),
                     itemBuilder: (context, index) {
                       final recipe = filteredRecipes[index];
-                      return GestureDetector(
-                        onTap: () {
-                          // Navigate to the Recipe Detail page and pass the selected recipe
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => RecipeDetailPage(recipe: recipe),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Image + Favorite Icon
-                              Stack(
-                                children: [
-                                  Container(
-                                    height: 140,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[300],
-                                      borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(16),
-                                      ),
-                                    ),
-                                    child:
-                                        recipe.image.isEmpty
-                                            ? Icon(Icons.image, size: 50)
-                                            : ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.vertical(
-                                                    top: Radius.circular(16),
-                                                  ),
-                                              child: Image.network(
-                                                recipe.image,
-                                                fit: BoxFit.cover,
-                                                height: 140,
-                                                width: double.infinity,
-                                              ),
-                                            ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: GestureDetector(
-                                      onTap: () async {
-                                        await FavoriteService().toggleFavorite(
-                                          recipe,
-                                        );
-                                        await fetchFavorites(); // refresh UI with updated favorites
-                                      },
-
-                                      child: CircleAvatar(
-                                        radius: 14,
-                                        backgroundColor: Colors.white,
-                                        child: Icon(
-                                          favoriteIds.contains(
-                                                recipe.id.toString(),
-                                              )
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          color:
-                                              favoriteIds.contains(
-                                                    recipe.id.toString(),
-                                                  )
-                                                  ? Colors.red
-                                                  : Colors.grey,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      recipe.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.local_fire_department,
-                                          size: 14,
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text('${recipe.calories} Cal'),
-                                        SizedBox(width: 10),
-                                        Icon(Icons.access_time, size: 14),
-                                        SizedBox(width: 4),
-                                        Text('${recipe.totalTime} min'),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                      return _buildRecipeCard(recipe);
                     },
                   ),
                 ),
@@ -322,6 +272,109 @@ class _HomeState extends State<Home> {
       bottomNavigationBar: BottomNavBar(
         currentIndex: widget.focusSearch ? 1 : 0,
         onTap: (index) {},
+      ),
+    );
+  }
+
+  Widget _buildRecipeCard(Recipe recipe) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecipeDetailPage(recipe: recipe),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 140,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child:
+                      recipe.image.isEmpty
+                          ? Icon(Icons.image, size: 50)
+                          : ClipRRect(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(16),
+                            ),
+                            child: Image.network(
+                              recipe.image,
+                              fit: BoxFit.cover,
+                              height: 140,
+                              width: double.infinity,
+                            ),
+                          ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () async {
+                      await FavoriteService().toggleFavorite(recipe);
+                      await fetchFavorites();
+                    },
+                    child: CircleAvatar(
+                      radius: 14,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        favoriteIds.contains(recipe.uniqueId)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color:
+                            favoriteIds.contains(recipe.uniqueId)
+                                ? Colors.red
+                                : Colors.grey,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.name,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.local_fire_department, size: 14),
+                      SizedBox(width: 4),
+                      Text('${recipe.calories} Cal'),
+                      SizedBox(width: 10),
+                      Icon(Icons.access_time, size: 14),
+                      SizedBox(width: 4),
+                      Text('${recipe.totalTime} min'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
