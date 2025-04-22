@@ -24,12 +24,7 @@ class FavoriteService {
         'image': recipe.image,
         'prepTimeMinutes': recipe.prepTimeMinutes,
         'cookTimeMinutes': recipe.cookTimeMinutes,
-        'reviewCount': recipe.reviewCount,
-        'rating': recipe.rating,
-        'ingredients': recipe.ingredients,
-        'mealType': recipe.mealType,
         'caloriesPerServing': recipe.calories,
-        'instructions': recipe.instructions,
       });
     }
   }
